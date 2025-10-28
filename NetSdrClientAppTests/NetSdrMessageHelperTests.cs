@@ -1,7 +1,9 @@
+using NUnit.Framework;
 using NetSdrClientApp.Messages;
 
 namespace NetSdrClientAppTests
 {
+    [TestFixture]
     public class NetSdrMessageHelperTests
     {
         [SetUp]
@@ -64,38 +66,37 @@ namespace NetSdrClientAppTests
             Assert.That(parametersBytes.Count(), Is.EqualTo(parametersLength));
         }
 
-        //TODO: add more NetSdrMessageHelper tests
+        [Test]
+        public void GetControlItemMessage_ReturnsNotNull()
+        {
+            var msg = NetSdrMessageHelper.GetControlItemMessage(
+                NetSdrMessageHelper.MsgTypes.Ack,
+                NetSdrMessageHelper.ControlItemCodes.ReceiverState,
+                new byte[10]
+            );
+            Assert.That(msg, Is.Not.Null);
+        }
+
+        [Test]
+        public void GetDataItemMessage_ReturnsCorrectLength()
+        {
+            var msg = NetSdrMessageHelper.GetDataItemMessage(
+                NetSdrMessageHelper.MsgTypes.DataItem2,
+                new byte[100]
+            );
+            Assert.That(msg.Length, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void ControlItemMessage_HasExpectedHeader()
+        {
+            var msg = NetSdrMessageHelper.GetControlItemMessage(
+                NetSdrMessageHelper.MsgTypes.Ack,
+                NetSdrMessageHelper.ControlItemCodes.ReceiverState,
+                new byte[50]
+            );
+            var header = BitConverter.ToUInt16(msg, 0);
+            Assert.That(header, Is.GreaterThan(0));
+        }
     }
-}
-[Test]
-public void GetControlItemMessage_ReturnsNotNull()
-{
-    var msg = NetSdrMessageHelper.GetControlItemMessage(
-        NetSdrMessageHelper.MsgTypes.Ack,
-        NetSdrMessageHelper.ControlItemCodes.ReceiverState,
-        new byte[10]
-    );
-    Assert.That(msg, Is.Not.Null);
-}
-
-[Test]
-public void GetDataItemMessage_ReturnsCorrectLength()
-{
-    var msg = NetSdrMessageHelper.GetDataItemMessage(
-        NetSdrMessageHelper.MsgTypes.DataItem2,
-        new byte[100]
-    );
-    Assert.That(msg.Length, Is.GreaterThan(0));
-}
-
-[Test]
-public void ControlItemMessage_HasExpectedHeader()
-{
-    var msg = NetSdrMessageHelper.GetControlItemMessage(
-        NetSdrMessageHelper.MsgTypes.Ack,
-        NetSdrMessageHelper.ControlItemCodes.ReceiverState,
-        new byte[50]
-    );
-    var header = BitConverter.ToUInt16(msg, 0);
-    Assert.That(header, Is.GreaterThan(0));
 }
