@@ -4,8 +4,6 @@ using NetSdrClientApp.Messages;
 namespace NetSdrClientAppTests
 {
     [TestFixture]
-    public class NetSdrMessageHelperTests : INetSdrMessageHelperTests
-    public class NetSdrMessageHelperTests
     public class NetSdrMessageHelperTests
     {
         [SetUp]
@@ -100,3 +98,4 @@ namespace NetSdrClientAppTests
             Assert.That(header, Is.GreaterThan(0));
         }
     }
+}
