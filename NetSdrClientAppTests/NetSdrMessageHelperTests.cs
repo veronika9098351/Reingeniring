@@ -2,6 +2,8 @@ using NetSdrClientApp.Messages;
 
 namespace NetSdrClientAppTests
 {
+    [TestFixture]
+    public class NetSdrMessageHelperTests : INetSdrMessageHelperTests
     public class NetSdrMessageHelperTests
     {
         [SetUp]
@@ -64,19 +66,16 @@ namespace NetSdrClientAppTests
             Assert.That(parametersBytes.Count(), Is.EqualTo(parametersLength));
         }
 
-        //TODO: add more NetSdrMessageHelper tests
-    }
-}
-[Test]
-public void GetControlItemMessage_ReturnsNotNull()
-{
-    var msg = NetSdrMessageHelper.GetControlItemMessage(
-        NetSdrMessageHelper.MsgTypes.Ack,
-        NetSdrMessageHelper.ControlItemCodes.ReceiverState,
-        new byte[10]
-    );
-    Assert.That(msg, Is.Not.Null);
-}
+        [Test]
+        public void GetControlItemMessage_ReturnsNotNull()
+        {
+            var msg = NetSdrMessageHelper.GetControlItemMessage(
+                NetSdrMessageHelper.MsgTypes.Ack,
+                NetSdrMessageHelper.ControlItemCodes.ReceiverState,
+                new byte[10]
+            );
+            Assert.That(msg, Is.Not.Null);
+        }
 
 [Test]
 public void GetDataItemMessage_ReturnsCorrectLength()
