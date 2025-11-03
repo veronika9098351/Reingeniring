@@ -16,6 +16,7 @@ namespace NetSdrClientApp
     {
         private ITcpClient _tcpClient;
         private IUdpClient _udpClient;
+        private TaskCompletionSource<byte[]>? responseTaskSource; // ← ВИПРАВЛЕНО
 
         public bool IQStarted { get; set; }
 
@@ -117,9 +118,7 @@ namespace NetSdrClientApp
             }
         }
 
-        private TaskCompletionSource<byte[]> responseTaskSource;
-
-        private async Task<byte[]> SendControlMessageAsync(byte[] msg)
+        private async Task<byte[]?> SendControlMessageAsync(byte[] msg) // ← ВИПРАВЛЕНО
         {
             if (!await EnsureConnectedAsync()) return null;
 
@@ -143,7 +142,7 @@ namespace NetSdrClientApp
             Console.WriteLine($"Response received: {FormatBytes(e)}");
         }
 
-        public async Task<bool> EnsureConnectedAsync() 
+        public async Task<bool> EnsureConnectedAsync()
         {
             if (!_tcpClient.Connected)
             {
@@ -153,7 +152,7 @@ namespace NetSdrClientApp
             return true;
         }
 
-        private static string FormatBytes(byte[] bytes)  
+        private static string FormatBytes(byte[] bytes)
         {
             return bytes.Select(b => Convert.ToString(b, toBase: 16)).Aggregate((l, r) => $"{l} {r}");
         }
