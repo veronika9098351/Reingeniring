@@ -4,6 +4,8 @@ using NetSdrClientApp.Messages;
 namespace NetSdrClientAppTests
 {
     [TestFixture]
+    public class NetSdrMessageHelperTests : INetSdrMessageHelperTests
+    public class NetSdrMessageHelperTests
     public class NetSdrMessageHelperTests
     {
         [SetUp]
