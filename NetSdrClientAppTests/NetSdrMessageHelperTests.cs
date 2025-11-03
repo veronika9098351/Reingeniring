@@ -5,7 +5,6 @@ namespace NetSdrClientAppTests
 {
     [TestFixture]
     public class NetSdrMessageHelperTests : INetSdrMessageHelperTests
-    public class NetSdrMessageHelperTests
     {
         [SetUp]
         public void Setup()
