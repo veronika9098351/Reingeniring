@@ -143,9 +143,7 @@ namespace NetSdrClientApp
             Console.WriteLine($"Response received: {FormatBytes(e)}");
         }
 
-        // НОВІ ДОПОМІЖНІ МЕТОДИ ДЛЯ УСУНЕННЯ ДУБЛІКАТІВ
-
-        private async Task<bool> EnsureConnectedAsync()
+        public async Task<bool> EnsureConnectedAsync() 
         {
             if (!_tcpClient.Connected)
             {
@@ -155,7 +153,7 @@ namespace NetSdrClientApp
             return true;
         }
 
-        private string FormatBytes(byte[] bytes)
+        private static string FormatBytes(byte[] bytes)  
         {
             return bytes.Select(b => Convert.ToString(b, toBase: 16)).Aggregate((l, r) => $"{l} {r}");
         }
