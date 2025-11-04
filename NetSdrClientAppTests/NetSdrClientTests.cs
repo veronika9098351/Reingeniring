@@ -48,13 +48,12 @@ public class NetSdrClientTests
     }
 
     [Test]
-    public async Task DisconnectWithNoConnectionTest()
+    public void DisconnectWithNoConnectionTest() 
     {
         //act
         _client.Disconect();
 
         //assert
-        //No exception thrown
         _tcpMock.Verify(tcp => tcp.Disconnect(), Times.Once);
     }
 
@@ -62,25 +61,22 @@ public class NetSdrClientTests
     public async Task DisconnectTest()
     {
         //Arrange 
-        await ConnectAsyncTest();
+        await _client.ConnectAsync(); 
 
         //act
-        _client.Disconect();
+        _client.Disconect(); 
 
         //assert
-        //No exception thrown
         _tcpMock.Verify(tcp => tcp.Disconnect(), Times.Once);
     }
 
     [Test]
     public async Task StartIQNoConnectionTest()
     {
-
         //act
         await _client.StartIQAsync();
 
         //assert
-        //No exception thrown
         _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Never);
         _tcpMock.VerifyGet(tcp => tcp.Connected, Times.AtLeastOnce);
     }
@@ -89,13 +85,11 @@ public class NetSdrClientTests
     public async Task StartIQTest()
     {
         //Arrange 
-        await ConnectAsyncTest();
-
+        await _client.ConnectAsync(); 
         //act
         await _client.StartIQAsync();
 
         //assert
-        //No exception thrown
         _updMock.Verify(udp => udp.StartListeningAsync(), Times.Once);
         Assert.That(_client.IQStarted, Is.True);
     }
@@ -104,16 +98,41 @@ public class NetSdrClientTests
     public async Task StopIQTest()
     {
         //Arrange 
-        await ConnectAsyncTest();
+        await _client.ConnectAsync(); 
 
         //act
         await _client.StopIQAsync();
 
         //assert
-        //No exception thrown
-        _updMock.Verify(tcp => tcp.StopListening(), Times.Once);
+        _updMock.Verify(udp => udp.StopListening(), Times.Once);
         Assert.That(_client.IQStarted, Is.False);
     }
 
-    //TODO: cover the rest of the NetSdrClient code here
+    [Test]
+    public async Task ChangeFrequencyAsync_WhenConnected_SendsMessage()
+    {
+        // Arrange
+        await _client.ConnectAsync();
+        long frequency = 100000000; // 100 MHz
+        int channel = 1;
+
+        // Act
+        await _client.ChangeFrequencyAsync(frequency, channel);
+
+        // Assert
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(4)); // 3 при підключенні + 1 для частоти
+    }
+
+    [Test]
+    public async Task EnsureConnectedAsync_ReturnsConnectionStatus()
+    {
+        // Arrange
+        _tcpMock.Setup(tcp => tcp.Connected).Returns(true);
+
+        // Act
+        var result = await _client.EnsureConnectedAsync();
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
 }
