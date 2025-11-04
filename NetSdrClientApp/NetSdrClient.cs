@@ -140,16 +140,7 @@ namespace NetSdrClientApp
             }
             Console.WriteLine($"Response received: {FormatBytes(e)}");
         }
-
-        public async Task<bool> EnsureConnectedAsync()
-        {
-            if (!_tcpClient.Connected)
-            {
-                Console.WriteLine("No active connection.");
-                return false;
-            }
-            return true;
-        }
+        public async Task<bool> EnsureConnectedAsync() => _tcpClient.Connected;
 
         private static string FormatBytes(byte[] bytes)
         {
