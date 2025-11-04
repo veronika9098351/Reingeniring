@@ -16,7 +16,6 @@ namespace NetSdrClientApp
     {
         private ITcpClient _tcpClient;
         private IUdpClient _udpClient;
-        private TaskCompletionSource<byte[]>? responseTaskSource; 
 
         public bool IQStarted { get; set; }
 
@@ -39,7 +38,7 @@ namespace NetSdrClientApp
                 var automaticFilterMode = BitConverter.GetBytes((ushort)0).ToArray();
                 var adMode = new byte[] { 0x00, 0x03 };
 
-           
+                //Host pre setup
                 var msgs = new List<byte[]>
                 {
                     NetSdrMessageHelper.GetControlItemMessage(MsgTypes.SetControlItem, ControlItemCodes.IQOutputDataSampleRate, sampleRate),
@@ -113,12 +112,14 @@ namespace NetSdrClientApp
             {
                 foreach (var sample in samples)
                 {
-                    sw.Write((short)sample);  
+                    sw.Write((short)sample); //write 16 bit per sample as configured 
                 }
             }
         }
 
-        private async Task<byte[]?> SendControlMessageAsync(byte[] msg) 
+        private TaskCompletionSource<byte[]> responseTaskSource;
+
+        private async Task<byte[]> SendControlMessageAsync(byte[] msg)
         {
             if (!await EnsureConnectedAsync()) return null;
 
@@ -133,6 +134,7 @@ namespace NetSdrClientApp
 
         private void _tcpClient_MessageReceived(object? sender, byte[] e)
         {
+            //TODO: add Unsolicited messages handling here
             if (responseTaskSource != null)
             {
                 responseTaskSource.SetResult(e);
@@ -140,9 +142,18 @@ namespace NetSdrClientApp
             }
             Console.WriteLine($"Response received: {FormatBytes(e)}");
         }
-        public async Task<bool> EnsureConnectedAsync() => _tcpClient.Connected;
 
-        private static string FormatBytes(byte[] bytes)
+        public async Task<bool> EnsureConnectedAsync() 
+        {
+            if (!_tcpClient.Connected)
+            {
+                Console.WriteLine("No active connection.");
+                return false;
+            }
+            return true;
+        }
+
+        private static string FormatBytes(byte[] bytes)  
         {
             return bytes.Select(b => Convert.ToString(b, toBase: 16)).Aggregate((l, r) => $"{l} {r}");
         }
