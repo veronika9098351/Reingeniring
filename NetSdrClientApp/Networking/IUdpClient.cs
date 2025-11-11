@@ -7,4 +7,5 @@ public interface IUdpClient
 
     void StopListening();
     void Exit();
+    int GetHashCode();
 }
