@@ -1,5 +1,5 @@
-﻿using NetArchTest.Rules;
-using NUnit.Framework;
+﻿using NUnit.Framework;
+using NetArchTest.Rules;
 
 namespace NetSdrClientAppTests
 {
@@ -7,30 +7,31 @@ namespace NetSdrClientAppTests
     public class ArchitectureRulesTests
     {
         private const string AppNamespace = "NetSdrClientApp";
-        private const string ServerNamespace = "EchoServer";
+
+        private static Types AppTypes =>
+            Types
+                .InAssembly(typeof(NetSdrClientApp.NetSdrClient).Assembly); // <— тільки головна збірка
 
         [Test]
         public void ClientApp_ShouldNotDependOn_EchoServer()
         {
-            var result = Types
-                .InCurrentDomain()
+            var result = AppTypes
                 .ShouldNot()
-                .HaveDependencyOn(ServerNamespace)
+                .HaveDependencyOn("EchoServer")
                 .GetResult();
 
             Assert.That(result.IsSuccessful, Is.True);
         }
 
         [Test]
-        public void App_ShouldNotDependOn_TestProject()
+        public void ClientApp_ShouldNotDependOn_TestProject()
         {
-            var result = Types
-                .InCurrentDomain()
+            var result = AppTypes
                 .ShouldNot()
                 .HaveDependencyOn("NetSdrClientAppTests")
                 .GetResult();
 
-            Assert.That(result.IsSuccessful, Is.True);
+            Assert.That(result.IsSuccessful);
         }
     }
 }
