@@ -8,12 +8,15 @@ namespace EchoServer.Tests
         [Test]
         public void Process_ShouldReturnSameBytes()
         {
-            IEchoProcessor processor = new EchoProcessor();
+            // FIXED for SonarCloud
+            var processor = new EchoProcessor();
+
             byte[] input = { 1, 2, 3 };
 
             byte[] result = processor.Process(input, input.Length);
 
-            Assert.AreEqual(input, result);
+            // FIXED for SonarCloud (constraint model)
+            Assert.That(result, Is.EqualTo(input));
         }
     }
 }
