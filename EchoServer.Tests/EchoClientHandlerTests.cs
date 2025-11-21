@@ -27,14 +27,18 @@ namespace EchoServer.Tests
             var stream = client.GetStream();
             byte[] message = { 9, 9, 9 };
 
-            await stream.WriteAsync(message.AsMemory(0, message.Length), CancellationToken.None);;
+            await stream.WriteAsync(message.AsMemory(0, message.Length), CancellationToken.None); ;
             await handler.HandleAsync(accepted, CancellationToken.None);
 
             byte[] buffer = new byte[100];
             int read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), CancellationToken.None);
 
-            Assert.That(read, Is.EqualTo(3));
-            Assert.That(buffer[..3], Is.EqualTo(message));
+            Assert.Multiple(() =>
+            {
+                Assert.That(read, Is.EqualTo(3));
+                Assert.That(buffer[..3], Is.EqualTo(message));
+            }
+            );
+        }
         }
     }
-}
