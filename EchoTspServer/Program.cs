@@ -1,10 +1,11 @@
-﻿using System;
+﻿using EchoServer;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EchoServerApp
+namespace EchoServer
 {
     public class EchoServer
     {
@@ -12,18 +13,25 @@ namespace EchoServerApp
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        public bool IsRunning { get; private set; }   // <-- додано
+        private readonly IClientHandler _handler;  // <-- додано
 
-        public EchoServer(int port, TcpListener? listener = null)
+        public bool IsRunning { get; private set; }
+
+        public EchoServer(int port,
+                          IClientHandler? handler = null,
+                          TcpListener? listener = null)
         {
             _port = port;
             _listener = listener ?? new TcpListener(IPAddress.Any, port);
             _cancellationTokenSource = new CancellationTokenSource();
+
+            // якщо хендлер не передали — використовуємо наш
+            _handler = handler ?? new EchoClientHandler(new EchoProcessor());
         }
 
         public async Task StartAsync()
         {
-            IsRunning = true;                         // <-- додано
+            IsRunning = true;
             _listener.Start();
             Console.WriteLine($"Server started on port {_port}.");
 
@@ -36,10 +44,10 @@ namespace EchoServerApp
             Console.WriteLine("Server shutdown.");
         }
 
-        // для тестів
+        // однократний режим для тестів
         public async Task StartOnceAsync()
         {
-            IsRunning = true;                        // <-- додано
+            IsRunning = true;
             _listener.Start();
 
             TcpClient client = await _listener.AcceptTcpClientAsync();
@@ -48,23 +56,13 @@ namespace EchoServerApp
 
         private async Task HandleClientAsync(TcpClient client, CancellationToken token)
         {
-            using NetworkStream stream = client.GetStream();
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-
-            while (!token.IsCancellationRequested &&
-                   (bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
-            {
-                await stream.WriteAsync(buffer, 0, bytesRead, token);
-            }
-
-            client.Close();
+            // тепер логіку обробки клієнта виконує Handler
+            await _handler.HandleAsync(client, token);
         }
 
         public void Stop()
         {
-            IsRunning = false;                       // <-- додано
-
+            IsRunning = false;
             _cancellationTokenSource.Cancel();
             _listener.Stop();
         }
