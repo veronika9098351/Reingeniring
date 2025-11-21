@@ -20,6 +20,10 @@ namespace EchoServer
 
             int bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), token);
 
+            // SonarCloud-friendly check
+            if (bytesRead == 0)
+                return;
+
             var response = _processor.Process(buffer, bytesRead);
 
             await stream.WriteAsync(response.AsMemory(0, response.Length), token);

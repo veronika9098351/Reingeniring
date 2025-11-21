@@ -13,7 +13,7 @@ namespace EchoServer
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        private readonly IClientHandler _handler;  // <-- додано
+        private readonly IClientHandler _handler;
 
         public bool IsRunning { get; private set; }
 
@@ -25,7 +25,6 @@ namespace EchoServer
             _listener = listener ?? new TcpListener(IPAddress.Any, port);
             _cancellationTokenSource = new CancellationTokenSource();
 
-            // якщо хендлер не передали — використовуємо наш
             _handler = handler ?? new EchoClientHandler(new EchoProcessor());
         }
 
@@ -56,7 +55,6 @@ namespace EchoServer
 
         private async Task HandleClientAsync(TcpClient client, CancellationToken token)
         {
-            // тепер логіку обробки клієнта виконує Handler
             await _handler.HandleAsync(client, token);
         }
 
@@ -64,11 +62,12 @@ namespace EchoServer
         {
             IsRunning = false;
             _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose(); // <-- SonarCloud FIX
             _listener.Stop();
         }
     }
 
-    public class Program
+    public static class Program   // <-- SonarCloud FIX: static class
     {
         public static async Task Main(string[] args)
         {
