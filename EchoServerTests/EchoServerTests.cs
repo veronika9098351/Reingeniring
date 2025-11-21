@@ -75,6 +75,40 @@ namespace EchoServerTests
             server.Stop();
             Assert.That(server.IsRunning, Is.False);
         }
+        [Test]
+        public async Task EchoServer_EchoesMultipleMessages()
+        {
+            var server = new EchoServer(5004);
+            var serverTask = server.StartOnceAsync();
+
+            using var client = new TcpClient();
+            await client.ConnectAsync("127.0.0.1", 5004);
+
+            var stream = client.GetStream();
+
+            string[] messages = { "one", "two", "three" };
+
+            foreach (var msg in messages)
+            {
+                byte[] data = Encoding.UTF8.GetBytes(msg);
+                await stream.WriteAsync(data, 0, data.Length);
+
+                byte[] buffer = new byte[data.Length];
+                int read = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+                string received = Encoding.UTF8.GetString(buffer);
+                Assert.That(received, Is.EqualTo(msg));
+            }
+
+            server.Stop();
+        }
+        [Test]
+        public void EchoServer_HasCancellationTokenSource()
+        {
+            var server = new EchoServer(5007);
+
+            Assert.DoesNotThrow(() => server.Stop());
+        }
 
     }
 }
