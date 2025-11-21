@@ -33,8 +33,8 @@ namespace EchoServer.Tests
             byte[] buffer = new byte[100];
             int read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), CancellationToken.None);
 
-            Assert.AreEqual(3, read);
-            Assert.AreEqual(message, buffer[..3]);
+            Assert.That(read, Is.EqualTo(3));
+            Assert.That(buffer[..3], Is.EqualTo(message));
         }
     }
 }
