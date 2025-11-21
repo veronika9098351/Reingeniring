@@ -24,5 +24,7 @@
   <ItemGroup>
     <Using Include="NUnit.Framework" />
   </ItemGroup>
-
+	<PropertyGroup>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
 </Project>

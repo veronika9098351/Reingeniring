@@ -109,6 +109,74 @@ namespace EchoServerTests
 
             Assert.DoesNotThrow(() => server.Stop());
         }
+        [Test]
+        public async Task EchoServer_HandlesEmptyMessage()
+        {
+            var server = new EchoServer(5008);
+            var task = server.StartOnceAsync();
+
+            using var client = new TcpClient();
+            await client.ConnectAsync("127.0.0.1", 5008);
+
+            var stream = client.GetStream();
+            await stream.WriteAsync(Array.Empty<byte>(), 0, 0);
+
+            server.Stop();
+
+            Assert.That(server.IsRunning, Is.False);
+        }
+        [Test]
+        public void EchoServer_StopIsIdempotent()
+        {
+            var server = new EchoServer(5011);
+
+            Assert.DoesNotThrow(() =>
+            {
+                server.Stop();
+                server.Stop();
+                server.Stop();
+            });
+        }
+        [Test]
+        public async Task EchoServer_DoesNotAcceptAfterStop()
+        {
+            var server = new EchoServer(5013);
+            var task = server.StartOnceAsync();
+
+            await Task.Delay(50);
+            server.Stop();
+
+            using var client = new TcpClient();
+
+            Assert.ThrowsAsync<SocketException>(async () =>
+                await client.ConnectAsync("127.0.0.1", 5013)
+            );
+        }
+        [Test]
+        public async Task EchoServer_HandlesTwoClientsInParallel()
+        {
+            var server = new EchoServer(5014);
+            var task = server.StartOnceAsync();
+
+            using var client1 = new TcpClient();
+            using var client2 = new TcpClient();
+
+            await client1.ConnectAsync("127.0.0.1", 5014);
+            await client2.ConnectAsync("127.0.0.1", 5014);
+
+            Assert.That(client1.Connected, Is.True);
+            Assert.That(client2.Connected, Is.True);
+
+            server.Stop();
+        }
+        [Test]
+        public void EchoServer_ThrowsOnInvalidPort()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new EchoServer(-1)
+            );
+        }
+
 
     }
 }
