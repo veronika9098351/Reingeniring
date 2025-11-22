@@ -11,83 +11,32 @@ namespace EchoServer
         private TcpListener _listener;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public EchoTcpServer(int port, Interfaces.ILogger logger, MessageHandler messageHandler)
+        public bool IsRunning { get; private set; }
+
+        public EchoServer(int port,
+                          TcpListener? listener = null)
         {
             _port = port;
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
+            _listener = listener ?? new TcpListener(IPAddress.Any, port);
             _cancellationTokenSource = new CancellationTokenSource();
         }
-
-        public async Task StartAsync()
-        {
-            _listener = new TcpListener(IPAddress.Any, _port);
-            _listener.Start();
-            _logger.Log($"Server started on port {_port}.");
-
-            while (!_cancellationTokenSource.Token.IsCancellationRequested)
-            {
-                try
-                {
-                    TcpClient client = await _listener.AcceptTcpClientAsync();
-                    _logger.Log("Client connected.");
-                    _ = Task.Run(() => HandleClientAsync(client, _cancellationTokenSource.Token));
-                }
-                catch (ObjectDisposedException)
-                {
-                    break;
-                }
-            }
-
-            _logger.Log("Server shutdown.");
         }
-
-        private async Task HandleClientAsync(TcpClient client, CancellationToken token)
-        {
-            using (NetworkStream stream = client.GetStream())
-            {
-                try
-                {
-                    byte[] buffer = new byte[8192];
-                    int bytesRead;
-
-                    while (!token.IsCancellationRequested && (bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
-                    {
-                        byte[] receivedData = new byte[bytesRead];
-                        Array.Copy(buffer, receivedData, bytesRead);
-                        byte[] response = _messageHandler.ProcessMessage(receivedData);
-                        await stream.WriteAsync(response, 0, response.Length, token);
-                        _logger.Log($"Echoed {response.Length} bytes to the client.");
-                    }
-                }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    _logger.Log($"Error: {ex.Message}");
-                }
-                finally
-                {
-                    client.Close();
-                    _logger.Log("Client disconnected.");
-                }
-            }
-        }
-
         public void Stop()
         {
+            IsRunning = false;
             _cancellationTokenSource.Cancel();
-            _listener?.Stop();
-            _cancellationTokenSource.Dispose();
-            _logger.Log("Server stopped.");
+            _cancellationTokenSource.Dispose(); // <-- SonarCloud FIX
+            _listener.Stop();
         }
     }
 
-    public class UdpTimedSender : IDisposable
-    {
-        private readonly string _host;
-        private readonly int _port;
-        private readonly UdpClient _udpClient;
-        private Timer _timer;
-        private ushort _counter = 0;
+
+public class UdpTimedSender : IDisposable
+{
+    private readonly string _host;
+    private readonly int _port;
+    private readonly UdpClient _udpClient;
+    private Timer _timer;
 
         public UdpTimedSender(string host, int port)
         {
