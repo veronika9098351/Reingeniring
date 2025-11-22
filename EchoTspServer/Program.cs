@@ -1,5 +1,8 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EchoServer
 {
@@ -8,106 +11,86 @@ namespace EchoServer
         private readonly int _port;
         private readonly Interfaces.ILogger _logger;
         private readonly MessageHandler _messageHandler;
+
         private TcpListener _listener;
         private CancellationTokenSource _cancellationTokenSource;
 
         public bool IsRunning { get; private set; }
 
-        public EchoServer(int port,
-                          TcpListener? listener = null)
+        public EchoTcpServer(int port, Interfaces.ILogger logger, MessageHandler messageHandler)
         {
             _port = port;
-            _listener = listener ?? new TcpListener(IPAddress.Any, port);
+            _logger = logger;
+            _messageHandler = messageHandler;
+
+            _listener = new TcpListener(IPAddress.Any, _port);
             _cancellationTokenSource = new CancellationTokenSource();
         }
-        }
-        public void Stop()
+
+        public async Task StartAsync()
         {
-            IsRunning = false;
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose(); // <-- SonarCloud FIX
-            _listener.Stop();
+            if (IsRunning)
+                return;
+
+            IsRunning = true;
+            _listener.Start();
+
+            _logger.Log($"TCP Server started on port: {_port}");
+
+            while (!_cancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    TcpClient client = await _listener.AcceptTcpClientAsync();
+                    _ = HandleClientAsync(client);
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+            }
         }
-    }
-
-
-public class UdpTimedSender : IDisposable
-{
-    private readonly string _host;
-    private readonly int _port;
-    private readonly UdpClient _udpClient;
-    private Timer _timer;
-
-        public UdpTimedSender(string host, int port)
-        {
-            _host = host;
-            _port = port;
-            _udpClient = new UdpClient();
-        }
-
-        public void StartSending(int intervalMilliseconds)
-        {
-            if (_timer != null)
-                throw new InvalidOperationException("Sender is already running.");
-            _timer = new Timer(SendMessageCallback, null, 0, intervalMilliseconds);
-        }
-
-        private void SendMessageCallback(object state)
+        private async Task HandleClientAsync(TcpClient client)
         {
             try
             {
-                Random rnd = new Random();
-                byte[] samples = new byte[1024];
-                rnd.NextBytes(samples);
-                _counter++;
-                byte[] msg = (new byte[] { 0x04, 0x84 }).Concat(BitConverter.GetBytes(_counter)).Concat(samples).ToArray();
-                var endpoint = new IPEndPoint(IPAddress.Parse(_host), _port);
-                _udpClient.Send(msg, msg.Length, endpoint);
-                Console.WriteLine($"Message sent to {_host}:{_port}");
+                using var stream = client.GetStream();
+                byte[] buffer = new byte[4096];
+
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+                if (bytesRead > 0)
+                {
+                    byte[] request = new byte[bytesRead];
+                    Array.Copy(buffer, request, bytesRead);
+
+                    byte[] response = _messageHandler.Handle(request);
+
+                    await stream.WriteAsync(response, 0, response.Length);
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error sending message: {ex.Message}");
+                _logger.Log($"Client error: {ex.Message}");
             }
-        }
-
-        public void StopSending()
-        {
-            _timer?.Dispose();
-            _timer = null;
-        }
-
-        public void Dispose()
-        {
-            StopSending();
-            _udpClient.Dispose();
-        }
-    }
-
-    class Program
-    {
-        public static async Task Main(string[] args)
-        {
-            var logger = new ConsoleLogger();
-            var messageHandler = new MessageHandler(logger);
-            var server = new EchoTcpServer(5000, logger, messageHandler);
-
-            _ = Task.Run(() => server.StartAsync());
-
-            string host = "127.0.0.1";
-            int port = 60000;
-            int intervalMilliseconds = 5000;
-
-            using (var sender = new UdpTimedSender(host, port))
+            finally
             {
-                Console.WriteLine("Press any key to stop sending...");
-                sender.StartSending(intervalMilliseconds);
-                Console.WriteLine("Press 'q' to quit...");
-                while (Console.ReadKey(intercept: true).Key != ConsoleKey.Q) { }
-                sender.StopSending();
-                server.Stop();
-                Console.WriteLine("Sender stopped.");
+                client.Close();
             }
+        }
+        public void Stop()
+        {
+            if (!IsRunning)
+                return;
+
+            IsRunning = false;
+
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
+
+            _listener.Stop();
+
+            _logger.Log("TCP Server stopped.");
         }
     }
 }

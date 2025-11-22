@@ -1,4 +1,7 @@
-﻿namespace EchoServer
+﻿using System;
+using System.Linq;
+
+namespace EchoServer
 {
     public class MessageHandler
     {
@@ -6,17 +9,11 @@
 
         public MessageHandler(Interfaces.ILogger logger)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _logger = logger;
         }
-
-        public byte[] ProcessMessage(byte[] message)
+        public byte[] Handle(byte[] message)
         {
-            if (message == null || message.Length == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            _logger.Log($"Processing message of {message.Length} bytes");
+            _logger.Log($"Received {message.Length} bytes");
             return message;
         }
     }
